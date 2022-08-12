@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
 
 	viewport: {
 		flex: 1,
-		borderWidth: 0,
+		aspectRatio: 3/4,
 		overflow: 'hidden',
 		backgroundColor: 'white',
 		justifyContent: 'center',
