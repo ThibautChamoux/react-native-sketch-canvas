@@ -17,8 +17,8 @@ export default class ResponsiveView extends Component {
 		const initialZoom = this.calcInitialZoom(props.initialStyle);
 		this.zoom = new Animated.Value(initialZoom);
 		props.updateZoomLevel(initialZoom);
-		this.$scrollerXBound = props.initialStyle.width / 2 + this.padding;
-		this.$scrollerYBound = props.initialStyle.height / 2 + this.padding;
+		this.$scrollerXBound = 750 / 4 + this.padding;
+		this.$scrollerYBound = 1000 / 4 + this.padding;
 
 	}
 
@@ -29,8 +29,9 @@ export default class ResponsiveView extends Component {
 	}
 
 	calcInitialZoom(initialStyle) {
-		const zoomW = screenWidth / initialStyle.width;
-		const zoomH = screenHeight / initialStyle.height;
+		const zoomW = 1//screenWidth / initialStyle.width;
+		const zoomH = 1//screenHeight / initialStyle.height;
+
 		return zoomH < zoomW ? zoomH : zoomW;
 	}
 
@@ -42,7 +43,7 @@ export default class ResponsiveView extends Component {
 
 	}
 
-	componentWillMount() {
+	componentWillMount() { 
 
 		const requiredTouches = 2;
 		this.panGesture = PanResponder.create({
@@ -57,30 +58,29 @@ export default class ResponsiveView extends Component {
 			},
 
 			onPanResponderMove: (e, gestureState) => {
-				const info = JSON.parse(JSON.stringify(gestureState));
-
 				if (e.nativeEvent?.changedTouches?.length === 2) {
 					const touch1 = e.nativeEvent?.changedTouches[0];
 					const touch2 = e.nativeEvent?.changedTouches[1];
 
 					const distance = this.calcDistance(touch1.locationX, touch1.locationY, touch2.locationX, touch2.locationY);
 					if (this.state.initialDistance) {
+
+						// deltaZoom is used in order to avoid to zoom as soon as the user uses two fingers on the screen (for scrolling for instance)
 						const deltaZoom = (distance / this.state.initialDistance - 1) / 2;
+
 						if (Math.abs(deltaZoom) > 0.1) {
 							let zoom = this.zoom._value + deltaZoom;
-							console.log(`zoom : ${zoom} ; min : ${this.props.minZoomScale} ; max : ${this.props.minZoomScale}`)
 							if (zoom > this.props.maxZoomScale) {
 								zoom = this.props.maxZoomScale;
 							} else if (zoom < this.props.minZoomScale) {
 								zoom = this.props.minZoomScale;
 							}
-							console.log(`zoom : ${zoom}`)
-
 							Animated.timing(this.zoom,
 								{
 									toValue: zoom,
 									duration: 200,
 									easing: Easing.out(Easing.ease),
+									useNativeDriver: false
 								}).start();
 							this.props.updateZoomLevel(zoom);
 						}
@@ -88,27 +88,29 @@ export default class ResponsiveView extends Component {
 						this.setState({ initialDistance: distance });
 					}
 				}
-				let mx = gestureState.moveX - this.$lastPt.x;
-				let my = gestureState.moveY - this.$lastPt.y;
 
-				if (this.dual.x._value < -this.$scrollerXBound * this.zoom) {
+				// mx and my : 'how much we moved between each sample of the movement'
+				let mx = (gestureState.moveX - this.$lastPt.x) / this.zoom._value;
+				let my = (gestureState.moveY - this.$lastPt.y) / this.zoom._value;
+				
+				if (this.dual.x._value < -this.$scrollerXBound * this.zoom._value) {
 					mx *= (1 - this.elasticity);
 					this.$outboundX = true;
 				}
 
-				if (this.dual.x._value > this.$scrollerXBound * this.zoom) {
+				if (this.dual.x._value > this.$scrollerXBound * this.zoom._value) {
 					if (gestureState.vx < 0) {
 						mx *= (1 - this.elasticity);
 					}
 					this.$outboundX = true;
 				}
 
-				if (this.dual.y._value < -this.$scrollerYBound * this.zoom) {
+				if (this.dual.y._value < -this.$scrollerYBound * this.zoom._value) {
 					my *= (1 - this.elasticity);
 					this.$outboundY = true;
 				}
 
-				if (this.dual.y._value > this.$scrollerYBound * this.zoom) {
+				if (this.dual.y._value > this.$scrollerYBound * this.zoom._value) {
 					// console.log( ' y 向上出界: ', JSON.parse(JSON.stringify(gestureState)) );
 					if (gestureState.vy < 0) {
 						my *= (1 - this.elasticity);
@@ -123,7 +125,7 @@ export default class ResponsiveView extends Component {
 					x: this.dual.x._value + mx,
 					y: this.dual.y._value + my,
 				});
-
+				
 				this.$lastPt = { x: gestureState.moveX, y: gestureState.moveY };
 			},
 
@@ -142,31 +144,34 @@ export default class ResponsiveView extends Component {
 							toValue: { x: 44, y: 44 },
 							velocity: { x: vx, y: vy },
 							deceleration: 0.996,
+							useNativeDriver: false
 						},
 					).start(() => this.checkBounds(gestureState));
 				}
 				this.setState({ initialDistance: null, oldTouch: null });
 				this.$outboundX = this.$outboundY = false;
+
 			},
 		});
 	}
 
 	checkBounds(gestureState) {
 		const obj = { x: this.dual.x._value, y: this.dual.y._value };
-		if (this.dual.x._value < -this.$scrollerXBound * this.zoom) obj.x = -this.$scrollerXBound * this.zoom;
 
-		if (this.dual.x._value > this.$scrollerXBound * this.zoom) obj.x = this.$scrollerXBound * this.zoom;
+		if (this.dual.x._value < -this.$scrollerXBound * this.zoom._value) obj.x = -this.$scrollerXBound * this.zoom._value;
 
-		if (this.dual.y._value < -this.$scrollerYBound * this.zoom) obj.y = -this.$scrollerYBound * this.zoom;
+		if (this.dual.x._value > this.$scrollerXBound * this.zoom._value) obj.x = this.$scrollerXBound * this.zoom._value;
 
-		if (this.dual.y._value > this.$scrollerYBound * this.zoom) obj.y = this.$scrollerYBound * this.zoom;
+		if (this.dual.y._value < -this.$scrollerYBound * this.zoom._value) obj.y = -this.$scrollerYBound * this.zoom._value;
 
+		if (this.dual.y._value > this.$scrollerYBound * this.zoom._value) obj.y = this.$scrollerYBound * this.zoom._value;
 		Animated.timing(
 			this.dual,
 			{
 				toValue: { x: obj.x, y: obj.y },
 				duration: 200,
 				easing: Easing.out(Easing.ease),
+				useNativeDriver: false
 			},
 		).start();
 	}
@@ -177,7 +182,7 @@ export default class ResponsiveView extends Component {
 				style={styles.viewport}
 				{...this.panGesture.panHandlers}
 			>
-				<Animated.View style={[this.props.initialStyle, this.dual.getLayout(), { transform: [{ scaleX: this.zoom }, { scaleY: this.zoom }] }]} ref='contentPane'>
+				<Animated.View style={[this.props.initialStyle, this.dual.getLayout(), { transform: [{ scaleX: this.zoom._value }, { scaleY: this.zoom._value }] }]} ref='contentPane'>
 					{this.props.children}
 				</Animated.View>
 			</View>
@@ -195,9 +200,9 @@ const styles = StyleSheet.create({
 
 	viewport: {
 		flex: 1,
-		backgroundColor: 'white',
-		borderWidth: 0,
+		borderWith: 0,
 		overflow: 'hidden',
+		backgroundColor: 'white',
 		justifyContent: 'center',
 		alignItems: 'center',
 	},

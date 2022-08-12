@@ -89,14 +89,15 @@ class ResponsiveSketchCanvas extends React.Component {
 			this.setState({ contentStyle: nextProps.contentStyle });
 		}
 		
-	  if(nextProps.contentStyle == null && nextProps.localSourceImage !== this.props.localSourceImage
-         && nextProps.localSourceImage.filename
-				 && (!this.props.localSourceImage || (nextProps.localSourceImage.filename !== this.props.localSourceImage.filename))){
-    	this.getBackgroundImageSize(nextProps.localSourceImage.filename);
-    }
+	  if(nextProps.contentStyle == null 
+		&& nextProps.localSourceImage !== this.props.localSourceImage
+    	&& nextProps.localSourceImage.filename
+		&& (!this.props.localSourceImage || (nextProps.localSourceImage.filename !== this.props.localSourceImage.filename))){
+			this.getBackgroundImageSize(nextProps.localSourceImage.filename);
+		}
   }
 
-	getBackgroundImageSize(path) {
+	/*getBackgroundImageSize(path) {
 		console.log(`Image path : ${path}`)
 		Image.getSize('./assets/images/'+path, (width, height) => {
 			this.setState({
@@ -110,7 +111,7 @@ class ResponsiveSketchCanvas extends React.Component {
 				},
 			});
 		});
-	}
+	}*/
 
 	renderActivityIndicator() {
 		return (
@@ -125,14 +126,11 @@ class ResponsiveSketchCanvas extends React.Component {
 	}
 
 	render() {
-		console.log(`canvas : ${this.canvas}`)
 		if(this.state.contentStyle){
 			const { maxZoom, minZoom, scrollEnabled, ...sketchProps } = this.props;
 			
 			return (
 				<ResponsiveView
-					centerContent
-					contentContainerStyle={[styles.scrollViewContainer,]}
 					maxZoomScale={maxZoom}
 					minZoomScale={minZoom}
 					scrollEnabled={scrollEnabled}
@@ -162,8 +160,7 @@ const styles = {
 		left: 0,
 		right: 0,
 		top: 0,
-		bottom: 0,
-		borderWidth: 1,
+		bottom: 0
 	},
 	scrollViewContainer: {
 		flexGrow: 1,
