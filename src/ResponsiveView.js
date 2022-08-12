@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
 
 	viewport: {
 		flex: 1,
-		borderWith: 0,
+		borderWidth: 0,
 		overflow: 'hidden',
 		backgroundColor: 'white',
 		justifyContent: 'center',
