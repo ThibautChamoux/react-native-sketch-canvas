@@ -97,9 +97,8 @@ class ResponsiveSketchCanvas extends React.Component {
 		}
   }
 
-	/*getBackgroundImageSize(path) {
-		console.log(`Image path : ${path}`)
-		Image.getSize('./assets/images/'+path, (width, height) => {
+	getBackgroundImageSize(path) {
+		Image.getSize(path, (width, height) => {
 			this.setState({
 				contentStyle: {
 					height,
@@ -111,7 +110,7 @@ class ResponsiveSketchCanvas extends React.Component {
 				},
 			});
 		});
-	}*/
+	}
 
 	renderActivityIndicator() {
 		return (
