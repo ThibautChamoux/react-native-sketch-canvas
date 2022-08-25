@@ -1,193 +1,156 @@
-import React, { Component } from 'react';
+import React, { useRef, useState, useEffect, Component } from 'react';
 import { Animated, Dimensions, Easing, PanResponder, StyleSheet, View, Platform } from 'react-native';
+import {
+	PinchGestureHandler,
+	PanGestureHandler,
+	PinchGestureHandlerEventPayload,
+	HandlerStateChangeEvent
+} from 'react-native-gesture-handler';
 
-export default class ResponsiveView extends Component {
-	elasticity = 0.8;
-	padding = 0;
+const ResponsiveView = (props) => {
 
-	constructor(props, b) {
-
-		super(props, b);
-		this.state = {
-			contentStyle: props.contentContainerStyle,
-			oldTouch: null,
-			initialDistance: null,
-		};
-		this.dual = new Animated.ValueXY({ x: 0, y: 0 });
-		const initialZoom = this.calcInitialZoom(props.initialStyle);
-		this.zoom = new Animated.Value(initialZoom);
-		props.updateZoomLevel(initialZoom);
-		this.$scrollerXBound = 750 / 4 + this.padding;
-		this.$scrollerYBound = 1000 / 4 + this.padding;
-
-	}
-
-	calcDistance(x1, y1, x2, y2) {
+	const elasticity = 0.8;
+	const padding = 0;
+	const ref = useRef()
+	
+	const { updateZoomLevel, minZoomScale, maxZoomScale } = props;
+	
+	const calcDistance = (x1, y1, x2, y2) => {
 		const dx = Math.abs(x1 - x2);
 		const dy = Math.abs(y1 - y2);
 		return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
 	}
+	
+	const pan = useRef(new Animated.ValueXY()).current;
+	const translateX = Animated.diffClamp(pan.x, 0, 100);
+	const translateY = Animated.diffClamp(pan.y, 0, 100);
 
-	calcInitialZoom(initialStyle) {
-		const zoomW = 1//screenWidth / initialStyle.width;
-		const zoomH = 1//screenHeight / initialStyle.height;
+	const [zoom, setZoom] = useState(new Animated.Value(1));
+	const [initDistance, setInitDistance] = useState(-1)
+	const width = useRef(0)
+	const height = useRef(0)
 
-		return zoomH < zoomW ? zoomH : zoomW;
-	}
+	useEffect(() => {
+		updateZoomLevel(1.0);
+	}, [])
 
-	componentDidMount() {
-		this.$outboundX = this.$outboundY = false;
-	}
-
-	componentDidUpdate() {
-
-	}
-
-	componentWillMount() { 
-
-		const requiredTouches = 2;
-		this.panGesture = PanResponder.create({
-			onStartShouldSetPanResponder: (evt, gestureState) => gestureState.numberActiveTouches === requiredTouches,
-			onStartShouldSetPanResponderCapture: (evt, gestureState) => gestureState.numberActiveTouches === requiredTouches,
-			onMoveShouldSetPanResponder: (evt, gestureState) => gestureState.numberActiveTouches === requiredTouches,
-			onMoveShouldSetPanResponderCapture: (evt, gestureState) => gestureState.numberActiveTouches === requiredTouches,
-
+	const panResponder =
+		
+		PanResponder.create({
+			
+			onStartShouldSetPanResponder: (evt, gestureState) => gestureState.numberActiveTouches === 2,
+			onStartShouldSetPanResponderCapture: (evt, gestureState) => gestureState.numberActiveTouches === 2,
+			onMoveShouldSetPanResponder: (evt, gestureState) => gestureState.numberActiveTouches === 2,
+			onMoveShouldSetPanResponderCapture: (evt, gestureState) => gestureState.numberActiveTouches === 2,
 			onPanResponderGrant: (e, gestureState) => {
-				this.$lastPt = { x: gestureState.x0, y: gestureState.y0 };
-				return gestureState.numberActiveTouches === requiredTouches;
+				if (gestureState.numberActiveTouches === 2) {
+					pan.setOffset({
+						x: pan.x._value,
+						y: pan.y._value
+					  });
+				}
 			},
-
-			onPanResponderMove: (e, gestureState) => {
-				if (e.nativeEvent?.changedTouches?.length === 2) {
-					const touch1 = e.nativeEvent?.changedTouches[0];
-					const touch2 = e.nativeEvent?.changedTouches[1];
-
-					const distance = this.calcDistance(touch1.locationX, touch1.locationY, touch2.locationX, touch2.locationY);
-					if (this.state.initialDistance) {
-
+			onPanResponderMove: (evt, gestureState) => {
+				if (evt.nativeEvent?.changedTouches?.length === 2) {
+					const touch1 = evt.nativeEvent?.changedTouches[0];
+					const touch2 = evt.nativeEvent?.changedTouches[1];
+					const distance = calcDistance(touch1.locationX, touch1.locationY, touch2.locationX, touch2.locationY)
+					if (initDistance >= 0) {
 						// deltaZoom is used in order to avoid to zoom as soon as the user uses two fingers on the screen (for scrolling for instance)
-						const deltaZoom = (distance / this.state.initialDistance - 1) / 2;
-
+						let deltaZoom = (distance / initDistance - 1 ) / 4;
+						//console.log(`distance : ${distance} ; initDistance : ${initDistance} ; zoom : ${zoom._value} ; delta zoom : ${deltaZoom} ; minZoom : ${minZoomScale} ; maxZoom : ${maxZoomScale}`)
 						if (Math.abs(deltaZoom) > 0.1) {
-							let zoom = this.zoom._value + deltaZoom;
-							if (zoom > this.props.maxZoomScale) {
-								zoom = this.props.maxZoomScale;
-							} else if (zoom < this.props.minZoomScale) {
-								zoom = this.props.minZoomScale;
+							newZoom = zoom._value + deltaZoom * 0.1;
+							if (newZoom > maxZoomScale) {
+								//console.log(`newZoom : ${newZoom} ; max : ${maxZoomScale}`)
+								newZoom = maxZoomScale;
+							} else if (newZoom < minZoomScale) {
+								//console.log(`newZoom : ${newZoom} ; min : ${minZoomScale}`)
+
+								newZoom = minZoomScale;
 							}
-							Animated.timing(this.zoom,
-								{
-									toValue: zoom,
-									duration: 200,
-									easing: Easing.out(Easing.ease),
-									useNativeDriver: false
-								}).start();
-							this.props.updateZoomLevel(zoom);
+							console.log(`new zoom : ${newZoom}`)
+							gestureState.scale = newZoom
+							console.log(gestureState)
+
 						}
 					} else {
-						this.setState({ initialDistance: distance });
+						console.log('Set init distance')
+						console.log(distance)
+						setInitDistance(distance);
 					}
-				}
 
-				// mx and my : 'how much we moved between each sample of the movement'
-				let mx = (gestureState.moveX - this.$lastPt.x) / this.zoom._value;
-				let my = (gestureState.moveY - this.$lastPt.y) / this.zoom._value;
+					if(gestureState.scale)
+						return Animated.event([
+							null,
+							{ dx: pan.x, dy: pan.y, scale: zoom }
+						],
+						{useNativeDriver: false})(evt, gestureState)
+					else 
+						return Animated.event([
+							null,
+							{ dx: pan.x, dy: pan.y }
+						],
+						{useNativeDriver: false})(evt, gestureState)
+				}
+			},
+			onPanResponderRelease: () => {
+				let triggerAnim = false;
 				
-				if (this.dual.x._value < -this.$scrollerXBound * this.zoom._value) {
-					mx *= (1 - this.elasticity);
-					this.$outboundX = true;
-				}
+				pan.flattenOffset();
 
-				if (this.dual.x._value > this.$scrollerXBound * this.zoom._value) {
-					if (gestureState.vx < 0) {
-						mx *= (1 - this.elasticity);
-					}
-					this.$outboundX = true;
-				}
+				const currentX = pan.x._value + pan.x._offset
+				const currentY = pan.y._value + pan.y._offset
 
-				if (this.dual.y._value < -this.$scrollerYBound * this.zoom._value) {
-					my *= (1 - this.elasticity);
-					this.$outboundY = true;
-				}
-
-				if (this.dual.y._value > this.$scrollerYBound * this.zoom._value) {
-					// console.log( ' y 向上出界: ', JSON.parse(JSON.stringify(gestureState)) );
-					if (gestureState.vy < 0) {
-						my *= (1 - this.elasticity);
-					}
-					this.$outboundY = true;
-				}
-
-				if (my > 40) my = 10;
-				if (my < -40) my = -10;
-
-				this.dual.setValue({
-					x: this.dual.x._value + mx,
-					y: this.dual.y._value + my,
-				});
+				// limits  are computed considering that (0, 0) position is located at the center of the view
+				const xMaxAbs = width.current * (zoom._value - 1) / 2
+				const yMaxAbs = height.current * (zoom._value - 1) / 2
 				
-				this.$lastPt = { x: gestureState.moveX, y: gestureState.moveY };
-			},
+				// when user releases touch, check if canvas iis "out of limit"
+				// if true, trigger animation that return to max authorized values
+				let toX=currentX, toY=currentY;
+				//console.log(currentX, currentY, xMaxAbs, yMaxAbs)
 
-			onPanResponderRelease: (e, gestureState) => {
-				if (this.$outboundX || this.$outboundY) {
-					this.checkBounds(gestureState);
-				} else if (Math.abs(gestureState.vx) > 0.03 || Math.abs(gestureState.vy) > 0.03) {
-
-					// cap the velocity
-					const vx = Math.max(-0.5, Math.min(0.5, gestureState.vx));
-					const vy = Math.max(-0.5, Math.min(0.5, gestureState.vy));
-
-					Animated.decay(
-						this.dual,
-						{
-							toValue: { x: 44, y: 44 },
-							velocity: { x: vx, y: vy },
-							deceleration: 0.996,
-							useNativeDriver: false
-						},
-					).start(() => this.checkBounds(gestureState));
+				if (Math.abs(currentX) > xMaxAbs) {
+					triggerAnim = true;
+					if (currentX < 0) toX = -xMaxAbs
+					else toX = xMaxAbs
 				}
-				this.setState({ initialDistance: null, oldTouch: null });
-				this.$outboundX = this.$outboundY = false;
+				if (Math.abs(currentY) > yMaxAbs) {
+					triggerAnim = true;
+					if (currentY < 0) toY = -yMaxAbs
+					else toY = yMaxAbs
+				}
+				
+				if (triggerAnim) {
+					Animated.timing(pan, {
+						toValue: {x: toX, y: toY},
+						duration: 200,
+						useNativeDriver: false
+					   },
+					   ).start();
+				}
 
-			},
-		});
-	}
+				setInitDistance(-1);
+				updateZoomLevel(zoom._value)
+			  }
+		})
+	  
 
-	checkBounds(gestureState) {
-		const obj = { x: this.dual.x._value, y: this.dual.y._value };
-
-		if (this.dual.x._value < -this.$scrollerXBound * this.zoom._value) obj.x = -this.$scrollerXBound * this.zoom._value;
-
-		if (this.dual.x._value > this.$scrollerXBound * this.zoom._value) obj.x = this.$scrollerXBound * this.zoom._value;
-
-		if (this.dual.y._value < -this.$scrollerYBound * this.zoom._value) obj.y = -this.$scrollerYBound * this.zoom._value;
-
-		if (this.dual.y._value > this.$scrollerYBound * this.zoom._value) obj.y = this.$scrollerYBound * this.zoom._value;
-		Animated.timing(
-			this.dual,
-			{
-				toValue: { x: obj.x, y: obj.y },
-				duration: 200,
-				easing: Easing.out(Easing.ease),
-				useNativeDriver: false
-			},
-		).start();
-	}
-
-	render() {
-		return (
-			<View
-				style={styles.viewport}
-				{...this.panGesture.panHandlers}
-			>
-				<Animated.View style={[this.props.initialStyle, this.dual.getLayout(), { transform: [{ scaleX: this.zoom._value }, { scaleY: this.zoom._value }] }]} ref='contentPane'>
-					{this.props.children}
+	  return (
+		<View
+			style={styles.viewport}
+			onLayout={event => {
+				const layout = event.nativeEvent.layout;
+				width.current = layout.width;
+				height.current = layout.height;
+			  }}
+		>	
+				<Animated.View {...panResponder.panHandlers} style={[props.initialStyle, { transform: [{ translateX: pan.x }, { translateY: pan.y}, { scaleX: zoom }, { scaleY: zoom }] }]}>
+					{props.children}
 				</Animated.View>
-			</View>
-		);
-	}
+		</View>
+	);
 }
 
 ResponsiveView.defaultProps = {
@@ -195,7 +158,6 @@ ResponsiveView.defaultProps = {
 	minZoomScale: 0.2,
 };
 
-const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 const styles = StyleSheet.create({
 
 	viewport: {
@@ -210,3 +172,5 @@ const styles = StyleSheet.create({
 	},
 
 });
+
+export default ResponsiveView
