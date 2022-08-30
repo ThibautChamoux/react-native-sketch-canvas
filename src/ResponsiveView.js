@@ -57,7 +57,7 @@ const ResponsiveView = (props) => {
 					const distance = calcDistance(touch1.locationX, touch1.locationY, touch2.locationX, touch2.locationY)
 					if (initDistance >= 0) {
 						// deltaZoom is used in order to avoid to zoom as soon as the user uses two fingers on the screen (for scrolling for instance)
-						let deltaZoom = (distance / initDistance - 1 ) / 4;
+						let deltaZoom = (distance / initDistance - 1 ) / (4 - (zoom._value - 1));
 						//console.log(`distance : ${distance} ; initDistance : ${initDistance} ; zoom : ${zoom._value} ; delta zoom : ${deltaZoom} ; minZoom : ${minZoomScale} ; maxZoom : ${maxZoomScale}`)
 						if (Math.abs(deltaZoom) > 0.1) {
 							newZoom = zoom._value + deltaZoom * 0.1;
@@ -69,14 +69,11 @@ const ResponsiveView = (props) => {
 
 								newZoom = minZoomScale;
 							}
-							console.log(`new zoom : ${newZoom}`)
 							gestureState.scale = newZoom
 							console.log(gestureState)
 
 						}
 					} else {
-						console.log('Set init distance')
-						console.log(distance)
 						setInitDistance(distance);
 					}
 
