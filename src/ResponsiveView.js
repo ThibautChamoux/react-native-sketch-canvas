@@ -9,11 +9,7 @@ import {
 
 const ResponsiveView = (props) => {
 
-	const elasticity = 0.8;
-	const padding = 0;
-	const ref = useRef()
-	
-	const { updateZoomLevel, minZoomScale, maxZoomScale } = props;
+	const { updateZoomLevel, minZoomScale, maxZoomScale, backgroundRatio = 1 } = props;
 	
 	const calcDistance = (x1, y1, x2, y2) => {
 		const dx = Math.abs(x1 - x2);
@@ -100,7 +96,7 @@ const ResponsiveView = (props) => {
 
 				// limits  are computed considering that (0, 0) position is located at the center of the view
 				const xMaxAbs = width.current * (zoom._value - 1) / 2
-				const yMaxAbs = height.current * (zoom._value - 1) / 2
+				const yMaxAbs = height.current * (zoom._value - 1) * backgroundRatio / 2
 				
 				// when user releases touch, check if canvas iis "out of limit"
 				// if true, trigger animation that return to max authorized values
@@ -157,14 +153,10 @@ ResponsiveView.defaultProps = {
 const styles = StyleSheet.create({
 
 	viewport: {
-		flex: 1,
-		aspectRatio: 3/4,
-		overflow: 'hidden',
-		backgroundColor: 'white',
+		height: '100%',
+		width: '100%',
 		justifyContent: 'center',
 		alignItems: 'center',
-	},
-	contentPane: {
 	},
 
 });

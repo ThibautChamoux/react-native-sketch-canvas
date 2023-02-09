@@ -126,16 +126,16 @@ class ResponsiveSketchCanvas extends React.Component {
 
 	render() {
 		if(this.state.contentStyle){
-			const { maxZoom, minZoom, scrollEnabled, ...sketchProps } = this.props;
+			const { maxZoom, minZoom, scrollEnabled, backgroundRatio,...sketchProps } = this.props;
 			
 			return (
 				<ResponsiveView
 					maxZoomScale={maxZoom}
 					minZoomScale={minZoom}
+					backgroundRatio={backgroundRatio}
 					scrollEnabled={scrollEnabled}
 					initialStyle={this.state.initialStyle ? this.state.initialStyle : this.state.contentStyle}
 					updateZoomLevel={this.updateZoomLevel.bind(this)}
-
 				>
 					<SketchCanvas
 						{...sketchProps}
@@ -160,10 +160,6 @@ const styles = {
 		right: 0,
 		top: 0,
 		bottom: 0
-	},
-	scrollViewContainer: {
-		flexGrow: 1,
-		justifyContent: 'center',
 	},
 }
 
