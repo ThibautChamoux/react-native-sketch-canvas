@@ -1,6 +1,6 @@
 'use strict';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, ActivityIndicator, Text, Image,   ViewPropTypes, Alert } from 'react-native';
 import PropTypes from 'prop-types'
 import SketchCanvas from './src/SketchCanvas';
