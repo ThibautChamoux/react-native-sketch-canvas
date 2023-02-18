@@ -56,7 +56,7 @@ const ResponsiveView = (props) => {
 						let deltaZoom = (distance / initDistance - 1 ) / (4 - (zoom._value - 1));
 						//console.log(`distance : ${distance} ; initDistance : ${initDistance} ; zoom : ${zoom._value} ; delta zoom : ${deltaZoom} ; minZoom : ${minZoomScale} ; maxZoom : ${maxZoomScale}`)
 						if (Math.abs(deltaZoom) > 0.1) {
-							newZoom = zoom._value + deltaZoom * 0.15;
+							let newZoom = zoom._value + deltaZoom * 0.15;
 							if (newZoom > maxZoomScale) {
 								//console.log(`newZoom : ${newZoom} ; max : ${maxZoomScale}`)
 								newZoom = maxZoomScale;
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
 	viewport: {
 		height: '100%',
 		width: '100%',
-		justifyContent: 'center',
+		justifyContent: 'flext-start',
 		alignItems: 'center',
 	},
 
